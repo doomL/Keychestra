@@ -13,7 +13,32 @@ from pathlib import Path
 
 log = logging.getLogger("keychestra")
 
-DEFAULT_DIR = Path.home() / "Music" / "Keychestra"
+
+def default_record_dir() -> Path:
+    """XDG Music folder (Musica / Music / …) + Keychestra — locale-aware."""
+    music: Path | None = None
+    if shutil.which("xdg-user-dir"):
+        try:
+            out = subprocess.check_output(
+                ["xdg-user-dir", "MUSIC"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+            if out and out != Path.home().as_posix():
+                music = Path(out)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+    if music is None:
+        # Parse user-dirs.dirs without hardcoding English "Music"
+        ud = Path.home() / ".config" / "user-dirs.dirs"
+        if ud.is_file():
+            text = ud.read_text(encoding="utf-8", errors="replace")
+            m = re.search(r'^XDG_MUSIC_DIR\s*=\s*"([^"]+)"', text, re.M)
+            if m:
+                music = Path(m.group(1).replace("$HOME", str(Path.home())))
+    if music is None:
+        music = Path.home() / "Music"
+    return music / "Keychestra"
 
 
 class SessionRecorder:
@@ -24,7 +49,7 @@ class SessionRecorder:
     """
 
     def __init__(self, output_dir: Path | None = None) -> None:
-        self.output_dir = Path(output_dir) if output_dir else DEFAULT_DIR
+        self.output_dir = Path(output_dir) if output_dir else default_record_dir()
         self._proc: subprocess.Popen | None = None
         self._path: Path | None = None
         self._lock = threading.Lock()
