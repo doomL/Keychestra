@@ -1,0 +1,24 @@
+# OrganBgWorker — configuration
+
+tray: true
+
+# SoundFont (FluidR3 GM). Optional override:
+# soundfont: /usr/share/sounds/sf2/FluidR3_GM.sf2
+
+instrument: piano
+
+# Layout: piano | scale_rows
+#   piano      = Z=Do, S=Do♯, … (snap fuori scala)
+#   scale_rows = una ottava di scala per riga (zxcvbnm / asdfghj / qwertyu)
+layout: piano
+
+scale: major
+root: C
+octave: 3
+
+volume: 0.22
+sample_rate: 44100
+
+mute_hotkey: "<ctrl>+<shift>+o"
+quit_hotkey: "<ctrl>+<shift>+q"
+ignore_repeat: true
