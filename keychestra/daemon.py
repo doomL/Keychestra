@@ -1,4 +1,4 @@
-"""Daemon orchestration: config, hotkeys, lifecycle."""
+"""Daemon orchestration: config, hotkeys, lifecycle, persistence."""
 
 from __future__ import annotations
 
@@ -14,33 +14,46 @@ from pynput import keyboard
 from pynput.keyboard import Key, KeyCode
 
 from keychestra.fluid_engine import create_engine
-from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument
+from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument, is_drums
 from keychestra.keymap import (
     LAYOUT_LABELS,
     LAYOUT_ORDER,
     LAYOUT_PIANO,
+    build_drum_keymap,
     build_keymap,
     resolve_midi,
 )
 from keychestra.listener import KeyboardOrganListener
+from keychestra.recorder import SessionRecorder
 from keychestra.scales import ROOT_NAMES, SCALE_INTERVALS, ScaleSettings
 
 log = logging.getLogger("keychestra")
 
-DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "config.yaml"
+REPO_CONFIG = Path(__file__).resolve().parent.parent / "config.yaml"
+USER_CONFIG = Path.home() / ".config" / "keychestra" / "config.yaml"
+
+
+def resolve_config_path(explicit: Path | None = None) -> Path:
+    if explicit is not None:
+        return explicit
+    if USER_CONFIG.is_file():
+        return USER_CONFIG
+    return REPO_CONFIG
 
 
 def load_config(path: Path | None = None) -> dict[str, Any]:
-    cfg_path = path or DEFAULT_CONFIG
+    cfg_path = resolve_config_path(path)
     with open(cfg_path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
 class OrganDaemon:
     def __init__(self, config_path: Path | None = None) -> None:
+        self.config_path = resolve_config_path(config_path)
+        # Always persist to the user config so settings survive reboot
+        self.persist_path = USER_CONFIG if config_path is None else config_path
         raw = load_config(config_path)
         self.raw = raw
-        self.config_path = config_path or DEFAULT_CONFIG
 
         instrument = str(raw.get("instrument", "piano"))
         if instrument not in INSTRUMENTS:
@@ -68,28 +81,73 @@ class OrganDaemon:
             instrument,
         )
 
-        self.keymap = build_keymap(layout=self.layout, settings=self.scale_settings)
         self.ignore_repeat = bool(raw.get("ignore_repeat", True))
         self.mute_hotkey = str(raw.get("mute_hotkey", "<ctrl>+<shift>+o"))
         self.quit_hotkey = str(raw.get("quit_hotkey", "<ctrl>+<shift>+q"))
         self.tray_enabled = bool(raw.get("tray", True))
 
+        self._rebuild_keymap()
         self.engine = create_engine(self.synth_cfg, soundfont_path=raw.get("soundfont"))
+        self.recorder = SessionRecorder(
+            output_dir=Path(raw["record_dir"]).expanduser()
+            if raw.get("record_dir")
+            else None
+        )
         self.listener: KeyboardOrganListener | None = None
         self._hotkeys: keyboard.GlobalHotKeys | None = None
         self._tray = None
         self._stop = threading.Event()
+        self._persist_lock = threading.Lock()
+
+        # Seed user config on first run so reboot always has a file
+        if not USER_CONFIG.is_file() and config_path is None:
+            self._persist()
+
+    def _persist(self) -> None:
+        """Write current settings so they survive app quit / reboot."""
+        data = {
+            "tray": self.tray_enabled,
+            "instrument": self.synth_cfg.instrument,
+            "layout": self.layout,
+            "scale": self.scale_settings.scale,
+            "root": self.scale_settings.root,
+            "octave": self.scale_settings.octave,
+            "volume": round(float(self.synth_cfg.volume), 3),
+            "sample_rate": int(self.synth_cfg.sample_rate),
+            "mute_hotkey": self.mute_hotkey,
+            "quit_hotkey": self.quit_hotkey,
+            "ignore_repeat": self.ignore_repeat,
+        }
+        if self.raw.get("soundfont"):
+            data["soundfont"] = self.raw["soundfont"]
+
+        path = self.persist_path
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with self._persist_lock:
+                tmp = path.with_suffix(".yaml.tmp")
+                with open(tmp, "w", encoding="utf-8") as f:
+                    f.write("# Keychestra — auto-saved settings\n")
+                    yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
+                tmp.replace(path)
+            log.debug("settings saved → %s", path)
+        except Exception:
+            log.exception("failed to save settings to %s", path)
 
     def _rebuild_keymap(self) -> None:
-        self.keymap = build_keymap(layout=self.layout, settings=self.scale_settings)
-        self.engine.all_notes_off()
+        if is_drums(self.synth_cfg.instrument):
+            self.keymap = build_drum_keymap()
+        else:
+            self.keymap = build_keymap(layout=self.layout, settings=self.scale_settings)
 
     def set_layout(self, layout: str) -> None:
         if layout not in LAYOUT_ORDER:
             return
         self.layout = layout
         self._rebuild_keymap()
+        self.engine.all_notes_off()
         log.info("layout → %s", LAYOUT_LABELS[layout])
+        self._persist()
         if self._tray is not None:
             self._tray._refresh()
 
@@ -98,7 +156,9 @@ class OrganDaemon:
             return
         self.engine.set_instrument(instrument_id)
         self.synth_cfg = self.engine.cfg
+        self._rebuild_keymap()
         log.info("instrument → %s", INSTRUMENTS[instrument_id].label)
+        self._persist()
         if self._tray is not None:
             self._tray._refresh()
 
@@ -107,7 +167,9 @@ class OrganDaemon:
             return
         self.scale_settings.scale = scale_id
         self._rebuild_keymap()
+        self.engine.all_notes_off()
         log.info("scale → %s", self.scale_settings.label)
+        self._persist()
         if self._tray is not None:
             self._tray._refresh()
 
@@ -116,19 +178,34 @@ class OrganDaemon:
             return
         self.scale_settings.root = root
         self._rebuild_keymap()
+        self.engine.all_notes_off()
         log.info("root → %s", self.scale_settings.label)
+        self._persist()
         if self._tray is not None:
             self._tray._refresh()
 
     def set_octave(self, octave: int) -> None:
         self.scale_settings.octave = max(1, min(6, int(octave)))
         self._rebuild_keymap()
+        self.engine.all_notes_off()
         log.info("octave → %d", self.scale_settings.octave)
+        self._persist()
         if self._tray is not None:
             self._tray._refresh()
 
+    def set_volume(self, volume: float) -> None:
+        self.engine.set_volume(volume)
+        self.synth_cfg = self.engine.cfg
+        self._persist()
+
     def _on_press(self, key: Key | KeyCode) -> None:
-        midi = resolve_midi(self.keymap, key, self.scale_settings, layout=self.layout)
+        if is_drums(self.synth_cfg.instrument):
+            # Drums: fixed kit map, no scale snap
+            midi = resolve_midi(self.keymap, key, settings=None, layout=LAYOUT_PIANO)
+        else:
+            midi = resolve_midi(
+                self.keymap, key, self.scale_settings, layout=self.layout
+            )
         if midi is None:
             return
         kid = KeyboardOrganListener._key_id(key)
@@ -144,18 +221,40 @@ class OrganDaemon:
         if self._tray is not None:
             self._tray._refresh()
 
+    def toggle_recording(self) -> bool:
+        """Start/stop session capture of system audio (YouTube + Keychestra)."""
+        if self.recorder.recording:
+            path = self.recorder.stop()
+            log.info("session saved: %s", path)
+            if self._tray is not None:
+                self._tray._refresh()
+            return False
+        try:
+            path = self.recorder.start()
+            log.info("session recording: %s", path)
+        except Exception:
+            log.exception("could not start session recording")
+            if self._tray is not None:
+                self._tray._refresh()
+            return False
+        if self._tray is not None:
+            self._tray._refresh()
+        return True
+
     def request_stop(self) -> None:
         log.info("stopping…")
+        if self.recorder.recording:
+            self.recorder.stop()
+        self._persist()
         self._stop.set()
 
     def run(self) -> int:
         log.info(
-            "Keychestra — %s / %s / %s. Mute: %s  Quit: %s",
+            "Keychestra — %s / %s / %s. Config: %s",
             INSTRUMENTS[self.synth_cfg.instrument].label,
             self.scale_settings.label,
             LAYOUT_LABELS[self.layout],
-            self.mute_hotkey,
-            self.quit_hotkey,
+            self.persist_path,
         )
 
         self.listener = KeyboardOrganListener(

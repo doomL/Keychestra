@@ -37,6 +37,54 @@ SCALE_ROWS = (
     list("qwertyu"),  # octave 2
 )
 
+# GM percussion (channel 10) — finger drumming layout
+DRUM_NOTES: dict[str, int] = {
+    # Bottom row — core kit
+    "z": 36,  # Bass Drum 1
+    "x": 38,  # Acoustic Snare
+    "c": 42,  # Closed Hi-Hat
+    "v": 46,  # Open Hi-Hat
+    "b": 41,  # Low Floor Tom
+    "n": 45,  # Low Tom
+    "m": 47,  # Low-Mid Tom
+    # Home row — extras / hands
+    "a": 37,  # Side Stick
+    "s": 40,  # Electric Snare
+    "d": 44,  # Pedal Hi-Hat
+    "f": 43,  # High Floor Tom
+    "g": 48,  # Hi-Mid Tom
+    "h": 50,  # High Tom
+    "j": 49,  # Crash Cymbal 1
+    "k": 51,  # Ride Cymbal 1
+    "l": 55,  # Splash Cymbal
+    # Top row — toys / latin
+    "q": 39,  # Hand Clap
+    "w": 54,  # Tambourine
+    "e": 56,  # Cowbell
+    "r": 63,  # Open Hi Conga
+    "t": 64,  # Low Conga
+    "y": 75,  # Claves
+    "u": 70,  # Maracas
+    "i": 81,  # Open Triangle
+    "o": 80,  # Mute Triangle
+    "p": 69,  # Cabasa
+    # Number row — crashes / rides
+    "1": 35,  # Acoustic Bass Drum
+    "2": 57,  # Crash Cymbal 2
+    "3": 59,  # Ride Cymbal 2
+    "4": 52,  # Chinese Cymbal
+    "5": 53,  # Ride Bell
+}
+
+
+def build_drum_keymap() -> dict[str, int]:
+    mapping: dict[str, int] = {}
+    for ch, note in DRUM_NOTES.items():
+        mapping[ch] = note
+        if ch.isalpha():
+            mapping[ch.upper()] = note
+    return mapping
+
 
 def _normalize_char(char: str | None) -> str | None:
     if not char or len(char) != 1:

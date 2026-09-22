@@ -72,10 +72,10 @@ class TrayController:
     def _title(self) -> str:
         inst = INSTRUMENTS[self.daemon.engine.cfg.instrument].label
         scale = self.daemon.scale_settings.label
-        layout = LAYOUT_LABELS.get(self.daemon.layout, self.daemon.layout)
         state = "muted" if self.daemon.engine.muted else "on"
         short = "piano" if self.daemon.layout == "piano" else "rows"
-        return f"Keychestra — {inst} · {scale} · {short} ({state})"
+        rec = " · REC" if self.daemon.recorder.recording else ""
+        return f"Keychestra — {inst} · {scale} · {short} ({state}){rec}"
 
     def _current_image(self) -> Image.Image:
         return self._icon_mute if self.daemon.engine.muted else self._icon_on
@@ -102,7 +102,7 @@ class TrayController:
     def _volume_delta(self, delta: float) -> Callable:
         def _cb(_icon=None, _item=None) -> None:
             vol = max(0.0, min(1.0, self.daemon.engine.cfg.volume + delta))
-            self.daemon.engine.set_volume(vol)
+            self.daemon.set_volume(vol)
             log.info("volume %.2f", vol)
             self._refresh()
 
@@ -110,6 +110,15 @@ class TrayController:
 
     def _mute_label(self, _item=None) -> str:
         return "Unmute" if self.daemon.engine.muted else "Mute"
+
+    def _record_label(self, _item=None) -> str:
+        if self.daemon.recorder.recording:
+            return "■ Stop recording"
+        return "● Record session"
+
+    def _toggle_record(self, _icon=None, _item=None) -> None:
+        self.daemon.toggle_recording()
+        self._refresh()
 
     def _set_instrument(self, instrument_id: str) -> Callable:
         def _cb(_icon=None, _item=None) -> None:
@@ -223,6 +232,7 @@ class TrayController:
 
         return Menu(
             MenuItem(self._mute_label, self._toggle_mute, default=True),
+            MenuItem(self._record_label, self._toggle_record),
             MenuItem("Volume +", self._volume_delta(0.05)),
             MenuItem("Volume −", self._volume_delta(-0.05)),
             Menu.SEPARATOR,

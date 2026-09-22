@@ -38,7 +38,9 @@ Emails still send. Code still compiles.
 | | |
 |---|---|
 | **Non-blocking** | Listens passively. Never steals keys from the focused app. |
-| **Real timbres** | FluidSynth + FluidR3 GM — piano, organ, guitar, strings, sax, choir, pads… |
+| **Real timbres** | FluidSynth + FluidR3 GM — piano, organ, guitar, **drums**, strings, sax, choir, pads… |
+| **Session record** | Tray → **Record session** captures *what you hear* (YouTube + Keychestra) into `~/Music/Keychestra/`. |
+| **Settings stick** | Everything you change in the tray is saved to `~/.config/keychestra/config.yaml` (survives quit & reboot). |
 | **Two layouts** | **Piano** (`Z`=Do, `S`=Do♯…) or **Scale rows** (one scale-octave per row — can’t really hit a wrong note). |
 | **Snap-to-scale** | In piano mode, out-of-scale keys bend to the nearest in-key pitch. Perfect for vibing over a track. |
 | **Tray cockpit** | Instrument, layout, scale, root, octave, mute, volume — live. |
@@ -110,10 +112,11 @@ systemctl --user enable --now keychestra.service
 
 ```
 Mute / Unmute
+● Record session   ← what you hear (track + your playing)
 Volume ±
 ────────────
 Layout          →  Piano  |  Scale rows
-Instrument      →  Piano, Organ, Guitar, Strings, Sax, Pad…
+Instrument      →  Piano, Organ, Guitar, Drums, Strings, Sax, Pad…
 Scale           →  Major, Minor, Modes, Blues, Pentatonic…
 Root note       →  C … B
 Octave ±

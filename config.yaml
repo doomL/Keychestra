@@ -1,4 +1,5 @@
-# Keychestra — configuration
+# Keychestra — default configuration (repo)
+# Live settings are auto-saved to: ~/.config/keychestra/config.yaml
 
 tray: true
 
@@ -8,8 +9,6 @@ tray: true
 instrument: piano
 
 # Layout: piano | scale_rows
-#   piano      = Z=Do, S=Do♯, … (snap fuori scala)
-#   scale_rows = una ottava di scala per riga (zxcvbnm / asdfghj / qwertyu)
 layout: piano
 
 scale: major

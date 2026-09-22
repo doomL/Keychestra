@@ -18,7 +18,8 @@ class SynthConfig:
 class Instrument:
     id: str
     label: str
-    gm_program: int  # General MIDI program 0–127
+    gm_program: int  # General MIDI program 0–127 (ignored for drums)
+    is_drums: bool = False
 
 
 INSTRUMENTS: dict[str, Instrument] = {
@@ -30,6 +31,7 @@ INSTRUMENTS: dict[str, Instrument] = {
     "guitar": Instrument("guitar", "Nylon Guitar", 24),
     "eguitar": Instrument("eguitar", "Clean Electric Guitar", 27),
     "bass": Instrument("bass", "Finger Bass", 33),
+    "drums": Instrument("drums", "Drum Kit", 0, is_drums=True),
     "strings": Instrument("strings", "String Ensemble", 48),
     "choir": Instrument("choir", "Choir Aahs", 52),
     "trumpet": Instrument("trumpet", "Trumpet", 56),
@@ -49,3 +51,8 @@ INSTRUMENT_ORDER = tuple(INSTRUMENTS.keys())
 def apply_instrument(cfg: SynthConfig, instrument_id: str) -> SynthConfig:
     inst = INSTRUMENTS[instrument_id]
     return replace(cfg, instrument=inst.id)
+
+
+def is_drums(instrument_id: str) -> bool:
+    inst = INSTRUMENTS.get(instrument_id)
+    return bool(inst and inst.is_drums)

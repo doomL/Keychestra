@@ -6,9 +6,12 @@ import logging
 import threading
 from pathlib import Path
 
-from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument
+from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument, is_drums
 
 log = logging.getLogger("keychestra")
+
+MELODY_CH = 0
+DRUM_CH = 9
 
 SOUND_FONT_CANDIDATES = (
     Path("/usr/share/sounds/sf2/FluidR3_GM.sf2"),
@@ -37,7 +40,7 @@ class FluidEngine:
 
         self.cfg = cfg
         self._lock = threading.Lock()
-        self._active: dict[object, int] = {}
+        self._active: dict[object, tuple[int, int]] = {}  # key_id -> (channel, note)
         self.muted = False
 
         self.fs = fluidsynth.Synth(samplerate=float(cfg.sample_rate))
@@ -61,9 +64,19 @@ class FluidEngine:
         self._set_gain_from_volume()
         log.info("SoundFont loaded: %s", soundfont)
 
+    def _channel(self) -> int:
+        return DRUM_CH if is_drums(self.cfg.instrument) else MELODY_CH
+
     def _apply_program(self) -> None:
         inst = INSTRUMENTS.get(self.cfg.instrument, INSTRUMENTS["piano"])
-        self.fs.program_select(0, self._sfid, 0, int(inst.gm_program))
+        if inst.is_drums:
+            # GM percussion bank on channel 10 (index 9)
+            try:
+                self.fs.program_select(DRUM_CH, self._sfid, 128, 0)
+            except Exception:
+                self.fs.program_select(DRUM_CH, self._sfid, 0, 0)
+        else:
+            self.fs.program_select(MELODY_CH, self._sfid, 0, int(inst.gm_program))
 
     def _set_gain_from_volume(self) -> None:
         gain = max(0.05, min(1.2, self.cfg.volume * 2.2))
@@ -94,30 +107,32 @@ class FluidEngine:
         if self.muted:
             return
         midi = int(max(0, min(127, midi)))
-        vel = int(max(40, min(100, 40 + self.cfg.volume * 120)))
+        vel = int(max(40, min(110, 45 + self.cfg.volume * 130)))
+        ch = self._channel()
         with self._lock:
             old = self._active.pop(key_id, None)
             if old is not None:
-                self.fs.noteoff(0, old)
-            self._active[key_id] = midi
-        self.fs.noteon(0, midi, vel)
+                self.fs.noteoff(old[0], old[1])
+            self._active[key_id] = (ch, midi)
+        self.fs.noteon(ch, midi, vel)
 
     def note_off(self, key_id: object) -> None:
         with self._lock:
-            midi = self._active.pop(key_id, None)
-        if midi is not None:
-            self.fs.noteoff(0, midi)
+            pair = self._active.pop(key_id, None)
+        if pair is not None:
+            self.fs.noteoff(pair[0], pair[1])
 
     def all_notes_off(self) -> None:
         with self._lock:
             notes = list(self._active.values())
             self._active.clear()
-        for midi in notes:
-            self.fs.noteoff(0, midi)
-        try:
-            self.fs.cc(0, 123, 0)
-        except Exception:
-            pass
+        for ch, midi in notes:
+            self.fs.noteoff(ch, midi)
+        for ch in (MELODY_CH, DRUM_CH):
+            try:
+                self.fs.cc(ch, 123, 0)
+            except Exception:
+                pass
 
     def shutdown(self) -> None:
         self.all_notes_off()
