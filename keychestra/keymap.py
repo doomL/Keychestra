@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pynput.keyboard import Key, KeyCode
 
-from organ_bg.scales import ScaleSettings, degree_to_midi, snap_to_scale
+from keychestra.scales import ScaleSettings, degree_to_midi, snap_to_scale
 
 LAYOUT_PIANO = "piano"
 LAYOUT_SCALE_ROWS = "scale_rows"

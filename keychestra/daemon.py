@@ -13,19 +13,19 @@ import yaml
 from pynput import keyboard
 from pynput.keyboard import Key, KeyCode
 
-from organ_bg.fluid_engine import create_engine
-from organ_bg.instruments import INSTRUMENTS, SynthConfig, apply_instrument
-from organ_bg.keymap import (
+from keychestra.fluid_engine import create_engine
+from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument
+from keychestra.keymap import (
     LAYOUT_LABELS,
     LAYOUT_ORDER,
     LAYOUT_PIANO,
     build_keymap,
     resolve_midi,
 )
-from organ_bg.listener import KeyboardOrganListener
-from organ_bg.scales import ROOT_NAMES, SCALE_INTERVALS, ScaleSettings
+from keychestra.listener import KeyboardOrganListener
+from keychestra.scales import ROOT_NAMES, SCALE_INTERVALS, ScaleSettings
 
-log = logging.getLogger("organ_bg")
+log = logging.getLogger("keychestra")
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "config.yaml"
 
@@ -150,7 +150,7 @@ class OrganDaemon:
 
     def run(self) -> int:
         log.info(
-            "OrganBgWorker — %s / %s / %s. Mute: %s  Quit: %s",
+            "Keychestra — %s / %s / %s. Mute: %s  Quit: %s",
             INSTRUMENTS[self.synth_cfg.instrument].label,
             self.scale_settings.label,
             LAYOUT_LABELS[self.layout],
@@ -175,7 +175,7 @@ class OrganDaemon:
 
         if self.tray_enabled:
             try:
-                from organ_bg.tray import TrayController
+                from keychestra.tray import TrayController
 
                 self._tray = TrayController(self)
                 self._tray.start()

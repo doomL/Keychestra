@@ -1,52 +1,54 @@
-# OrganBgWorker
+# Keychestra
 
-### Your keyboard. Still a keyboard. Also a pipe organ.
+### Type. Work. Jam over whatever’s playing.
 
 <p align="center">
-  <img alt="OrganBgWorker" src="https://img.shields.io/badge/status-ridiculously%20alive-8B1E1E?style=for-the-badge" />
+  <img alt="Keychestra" src="https://img.shields.io/badge/vibe-enabled-8B1E1E?style=for-the-badge" />
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" />
   <img alt="Linux" src="https://img.shields.io/badge/linux-X11-FCC624?style=for-the-badge&logo=linux&logoColor=black" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-0B7285?style=for-the-badge" />
 </p>
 
 <p align="center">
-  <b>Type emails. Ship code. Compose accidental masterpieces.</b><br/>
-  A background daemon that turns every keypress into real instrument sound —<br/>
-  without stealing focus, without blocking typing, without asking permission from your productivity.
+  <b>Your keyboard stays a keyboard.<br/>It also becomes the instrument you jam with — over the track in your headphones.</b>
 </p>
 
 ---
 
-## Why does this exist?
+## The use case (aka why this exists)
 
-Because sometimes you are deep in a terminal, and the universe whispers:
+You’re at work. There’s a track looping. You’re in the zone.
 
-> *what if `Z` was Do, and `S` was Do♯, and Slack was just… accompaniment?*
+You don’t open a DAW. You don’t grab a MIDI controller.  
+You just keep typing — and **Keychestra** lets you *play on top of the music* at the same time.
 
-**OrganBgWorker** is a passive keyboard → MIDI overlay for Linux.  
-You keep working. The keys keep typing. And underneath, a SoundFont orchestra answers.
+Emails still send. Code still compiles.  
+`Z` is still `z` for your editor — and Do for your solo.
 
-No virtual MIDI cable gymnastics. No “exclusive grab” that breaks your editor.  
-Just a tray icon, a daemon, and the quiet joy of writing `git commit` in Mixolydian.
+> Low volume. Mute in one click when the standup starts.  
+> Scales that keep you in key when you’re improvising half-distracted.  
+> Real SoundFont instruments, not toy beeps.
+
+**Productivity overlay meets desk jam session.**
 
 ---
 
-## Features that slap
+## What you get
 
 | | |
 |---|---|
-| **Non-blocking listener** | Observes key events (`pynput`, `suppress=False`). Your apps still get every keystroke. |
-| **Real instruments** | FluidSynth + FluidR3 GM SoundFont — piano, organ, strings, sax, choir, pads… |
-| **Two layouts** | **Piano** (`Z`=Do, `S`=Do♯…) or **Scale rows** (one scale-octave per keyboard row). |
-| **Snap-to-scale** | In piano mode, out-of-scale notes bend to the nearest in-scale pitch. |
-| **Tray control center** | Mute, volume, instrument, layout, scale, root, octave — live, no restart. |
-| **Always-on** | Run in foreground, daemonize, or install as a systemd user service. |
+| **Non-blocking** | Listens passively. Never steals keys from the focused app. |
+| **Real timbres** | FluidSynth + FluidR3 GM — piano, organ, guitar, strings, sax, choir, pads… |
+| **Two layouts** | **Piano** (`Z`=Do, `S`=Do♯…) or **Scale rows** (one scale-octave per row — can’t really hit a wrong note). |
+| **Snap-to-scale** | In piano mode, out-of-scale keys bend to the nearest in-key pitch. Perfect for vibing over a track. |
+| **Tray cockpit** | Instrument, layout, scale, root, octave, mute, volume — live. |
+| **Always on** | Foreground, daemon, or systemd user service. |
 
 ---
 
 ## Layouts
 
-### Piano mode — the classic
+### Piano — classic desk keyboard
 
 ```
    2 3   5 6 7   9 0
@@ -57,54 +59,54 @@ Just a tray icon, a daemon, and the quiet joy of writing `git commit` in Mixolyd
    └── Z = Do (C) · S = Do♯ · X = Re · …
 ```
 
-Pick a scale (Major, Dorian, Blues, Pentatonic…).  
-Press a “wrong” black key → it snaps to the nearest note that belongs.
+Pick the scale of the track (or close enough).  
+Miss a “black key”? It snaps into the scale. Keep flowing.
 
-### Scale rows — jam without fear
+### Scale rows — pure jam mode
 
 ```
- q w e r t y u     ← octave +2 of the scale
+ q w e r t y u     ← octave +2
  a s d f g h j     ← octave +1
  z x c v b n m     ← root octave
 ```
 
-Every key is already in the scale. One octave per row. Pure dopamine.
+One octave of the scale per row. Every key is safe.  
+Ideal when the YouTube tab is carrying the harmony and you’re just adding color.
 
 ---
 
 ## Quick start
 
 ```bash
-git clone https://github.com/doomL/OrganBgWorker.git
-cd OrganBgWorker
+git clone https://github.com/doomL/Keychestra.git
+cd Keychestra   # or whatever you named the folder
 
 python3 -m venv --system-site-packages .venv
 .venv/bin/pip install -r requirements.txt
 
-# SoundFont + tray (Ubuntu/GNOME)
 sudo apt install fluidsynth fluid-soundfont-gm gir1.2-ayatanaappindicator3-0.1
 
 ./run.sh
 ```
 
-Look up. There should be a tiny organ in your system tray.  
-Click it. Change instrument to **Church Organ**. Type your name. Cry a little.
+Put a track on. Open the tray. Choose **Scale rows** + a matching scale.  
+Type nonsense. Become the third instrument in the room.
 
-### Background / always on
+### Background
 
 ```bash
 ./run.sh --daemonize
 
-# or systemd user unit
 mkdir -p ~/.config/systemd/user
-cp organ-bg.service ~/.config/systemd/user/
+cp keychestra.service ~/.config/systemd/user/
+# edit WorkingDirectory / ExecStart if your path differs
 systemctl --user daemon-reload
-systemctl --user enable --now organ-bg.service
+systemctl --user enable --now keychestra.service
 ```
 
 ---
 
-## Tray menu (the cockpit)
+## Tray menu
 
 ```
 Mute / Unmute
@@ -119,45 +121,35 @@ Octave ±
 Quit
 ```
 
-Hotkeys (configurable in `config.yaml`):
-
-| Combo | Action |
-|------:|--------|
-| `Ctrl+Shift+O` | Mute toggle |
+| Hotkey | Action |
+|-------:|--------|
+| `Ctrl+Shift+O` | Mute (boss / meeting mode) |
 | `Ctrl+Shift+Q` | Quit |
 
 ---
 
-## Architecture (short & honest)
+## How it works
 
 ```
-┌─────────────┐     observe      ┌──────────────┐
-│  Keyboard   │ ───────────────► │   Listener   │  (pynput, passive)
-└─────────────┘                  └──────┬───────┘
-                                        │ note on/off
-                                        ▼
-                                 ┌──────────────┐
-                                 │  Key → MIDI  │  piano map / scale rows + snap
-                                 └──────┬───────┘
-                                        │
-                                        ▼
-                                 ┌──────────────┐
-                                 │  FluidSynth  │  FluidR3_GM.sf2
-                                 └──────────────┘
-                                        │
-                                 ┌──────────────┐
-                                 │  Tray (GTK)  │  live controls
-                                 └──────────────┘
+Keyboard ──observe──► Listener (pynput, passive)
+                           │
+                           ▼
+                     Key → MIDI  (piano map or scale rows + snap)
+                           │
+                           ▼
+                     FluidSynth + FluidR3_GM.sf2
+                           │
+                     System tray (live controls)
 ```
 
-Typing path and sound path are independent.  
-If audio dies, your keyboard still works. Priorities matter.
+Sound and typing are independent paths.  
+If audio glitches, your keyboard still works. As it should.
 
 ---
 
 ## Config
 
-See [`config.yaml`](./config.yaml):
+[`config.yaml`](./config.yaml):
 
 ```yaml
 instrument: piano
@@ -165,41 +157,33 @@ layout: piano          # or scale_rows
 scale: major
 root: C
 octave: 3
-volume: 0.22
-```
-
-Optional SoundFont override:
-
-```yaml
-soundfont: /usr/share/sounds/sf2/FluidR3_GM.sf2
+volume: 0.22           # keep it under the track
 ```
 
 ---
 
 ## Requirements
 
-- Linux with **X11** (global listeners are painful on pure Wayland)
+- Linux **X11** (global key listen on pure Wayland is a different beast)
 - Python 3.10+
-- `fluidsynth` + a GM SoundFont (`fluid-soundfont-gm`)
-- Tray: AppIndicator / Ayatana (typical on Ubuntu GNOME)
+- `fluidsynth` + GM SoundFont (`fluid-soundfont-gm`)
+- AppIndicator / Ayatana for the tray (Ubuntu GNOME usually has this)
 
 ---
 
-## Philosophy
+## Name
 
-> Productivity tools make you faster.  
-> OrganBgWorker makes you *inevitable*.
-
-Built for people who refuse to choose between shipping and vibing.
+**Keychestra** = keyboard + orchestra.  
+Not an organ-only toy — a whole desk ensemble for people who refuse to choose between shipping and vibing.
 
 ---
 
 ## License
 
-MIT — steal it, fork it, play Bach in your IDE, dedicate it to your rubber duck.
+MIT. Fork it. Jam in Mixolydian during standups. Blame us for the earworms.
 
 ---
 
 <p align="center">
-  <i>Made with caffeine, FluidR3, and one too many “wait, what if…” moments.</i>
+  <i>Built for the sacred ritual of “one more track” at 5pm.</i>
 </p>

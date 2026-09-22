@@ -6,9 +6,9 @@ import logging
 import threading
 from pathlib import Path
 
-from organ_bg.instruments import INSTRUMENTS, SynthConfig, apply_instrument
+from keychestra.instruments import INSTRUMENTS, SynthConfig, apply_instrument
 
-log = logging.getLogger("organ_bg")
+log = logging.getLogger("keychestra")
 
 SOUND_FONT_CANDIDATES = (
     Path("/usr/share/sounds/sf2/FluidR3_GM.sf2"),

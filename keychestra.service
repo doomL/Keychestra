@@ -1,11 +1,11 @@
 [Unit]
-Description=OrganBgWorker — keyboard organ overlay (non-blocking)
+Description=Keychestra — keyboard SoundFont jam overlay (non-blocking)
 After=default.target sound.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/clone/OrganBgWorker
-ExecStart=%h/clone/OrganBgWorker/.venv/bin/python -m organ_bg
+WorkingDirectory=%h/clone/Keychestra
+ExecStart=%h/clone/Keychestra/.venv/bin/python -m keychestra
 Restart=on-failure
 RestartSec=2
 Environment=DISPLAY=:1

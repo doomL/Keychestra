@@ -1,10 +1,10 @@
 [project]
-name = "organ-bg-worker"
+name = "keychestra"
 version = "0.2.0"
-description = "Background keyboard organ — type normally, play SoundFont instruments"
+description = "Type, work, and jam over your music — keyboard SoundFont overlay for Linux"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 
 [project.scripts]
-organ-bg = "organ_bg.__main__:main"
+keychestra = "keychestra.__main__:main"

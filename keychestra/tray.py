@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING, Callable
 from PIL import Image, ImageDraw
 
 if TYPE_CHECKING:
-    from organ_bg.daemon import OrganDaemon
+    from keychestra.daemon import OrganDaemon
 
-from organ_bg.instruments import INSTRUMENT_ORDER, INSTRUMENTS
-from organ_bg.keymap import LAYOUT_LABELS, LAYOUT_ORDER
-from organ_bg.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER
+from keychestra.instruments import INSTRUMENT_ORDER, INSTRUMENTS
+from keychestra.keymap import LAYOUT_LABELS, LAYOUT_ORDER
+from keychestra.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER
 
-log = logging.getLogger("organ_bg")
+log = logging.getLogger("keychestra")
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 
@@ -75,7 +75,7 @@ class TrayController:
         layout = LAYOUT_LABELS.get(self.daemon.layout, self.daemon.layout)
         state = "muted" if self.daemon.engine.muted else "on"
         short = "piano" if self.daemon.layout == "piano" else "rows"
-        return f"Organ — {inst} · {scale} · {short} ({state})"
+        return f"Keychestra — {inst} · {scale} · {short} ({state})"
 
     def _current_image(self) -> Image.Image:
         return self._icon_mute if self.daemon.engine.muted else self._icon_on
@@ -245,7 +245,7 @@ class TrayController:
         import pystray
 
         self._icon = pystray.Icon(
-            "organ-bg",
+            "keychestra",
             self._current_image(),
             self._title(),
             self._build_menu(),
@@ -256,7 +256,7 @@ class TrayController:
             log.info("tray icon ready (click for menu)")
             self._icon.run()
 
-        self._thread = threading.Thread(target=_run, name="organ-tray", daemon=True)
+        self._thread = threading.Thread(target=_run, name="keychestra-tray", daemon=True)
         self._thread.start()
 
     def stop(self) -> None:

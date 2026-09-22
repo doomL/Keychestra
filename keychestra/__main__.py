@@ -1,4 +1,4 @@
-"""CLI entry point: python -m organ_bg"""
+"""CLI entry point: python -m keychestra"""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ import os
 import sys
 from pathlib import Path
 
-from organ_bg import __version__
-from organ_bg.daemon import OrganDaemon, configure_logging
+from keychestra import __version__
+from keychestra.daemon import OrganDaemon, configure_logging
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="organ-bg",
-        description="Background organ: keyboard keeps typing, keys also sound.",
+        prog="keychestra",
+        description="Type, work, jam — keyboard stays normal, keys also play SoundFonts.",
     )
     parser.add_argument(
         "-c",
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--pidfile",
         type=Path,
-        default=Path.home() / ".cache" / "organ-bg" / "organ-bg.pid",
+        default=Path.home() / ".cache" / "keychestra" / "keychestra.pid",
         help="PID file when --daemonize",
     )
     parser.add_argument("--version", action="version", version=__version__)
