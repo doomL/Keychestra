@@ -1,8 +1,8 @@
 """
 Keyboard layouts:
 
-- piano: classic virtual piano — Z=Do(C) fisso, S=Do♯, X=Re, … ; out-of-scale → snap
-- scale_rows: each letter row is one octave of the chosen scale; Z = tonica
+- piano: classic virtual piano — Z=C fixed, S=C#, X=D, … ; out-of-scale → snap
+- scale_rows: each letter row is one octave of the chosen scale; Z = root
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ LAYOUT_PIANO = "piano"
 LAYOUT_SCALE_ROWS = "scale_rows"
 
 LAYOUT_LABELS = {
-    LAYOUT_PIANO: "Piano (Z=Do fisso)",
-    LAYOUT_SCALE_ROWS: "Scale rows (Z=tonica)",
+    LAYOUT_PIANO: "Piano (Z=C fixed)",
+    LAYOUT_SCALE_ROWS: "Scale rows (Z=root)",
 }
 
 LAYOUT_ORDER = (LAYOUT_PIANO, LAYOUT_SCALE_ROWS)
@@ -104,11 +104,11 @@ def build_piano_keymap(c_midi: int = 48) -> dict[str, int]:
 
 
 def build_scale_rows_keymap(settings: ScaleSettings) -> dict[str, int]:
-    """Each row = successive scale degrees; Z / A / Q are always the tonica."""
+    """Each row = successive scale degrees; Z / A / Q are always the root."""
     mapping: dict[str, int] = {}
     intervals = settings.intervals
     n_degrees = max(1, len(intervals))
-    base = settings.base_midi  # tonica at chosen octave
+    base = settings.base_midi  # root at chosen octave
 
     for row_i, row in enumerate(SCALE_ROWS):
         for key_i, ch in enumerate(row):
@@ -134,7 +134,7 @@ def build_keymap(
     settings = settings or ScaleSettings()
     if layout == LAYOUT_SCALE_ROWS:
         return build_scale_rows_keymap(settings)
-    # Piano: Z is always concert Do (C); root only affects snap-to-scale
+    # Piano: Z is always concert C; root only affects snap-to-scale
     return build_piano_keymap(settings.c_midi)
 
 

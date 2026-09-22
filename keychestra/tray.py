@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from keychestra.instruments import INSTRUMENT_ORDER, INSTRUMENTS
 from keychestra.keymap import LAYOUT_LABELS, LAYOUT_ORDER
-from keychestra.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER, root_menu_label
+from keychestra.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER
 
 log = logging.getLogger("keychestra")
 
@@ -267,7 +267,7 @@ class TrayController:
         root_menu = Menu(
             *[
                 MenuItem(
-                    root_menu_label(name),
+                    name,
                     self._set_root(name),
                     checked=self._root_checked(name),
                     radio=True,

@@ -42,34 +42,12 @@ SCALE_ORDER = tuple(SCALE_LABELS.keys())
 ROOT_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 ROOT_TO_SEMITONE = {name: i for i, name in enumerate(ROOT_NAMES)}
 
-# Italian solfege (shown next to Anglo names in the tray)
-ROOT_SOLFEGE = {
-    "C": "Do",
-    "C#": "Do♯",
-    "D": "Re",
-    "D#": "Re♯",
-    "E": "Mi",
-    "F": "Fa",
-    "F#": "Fa♯",
-    "G": "Sol",
-    "G#": "Sol♯",
-    "A": "La",
-    "A#": "La♯",
-    "B": "Si",
-}
-
 
 def midi_to_name(midi: int) -> str:
-    """e.g. 50 → 'Re (D3)'."""
+    """e.g. 50 → 'D3'."""
     pc = midi % 12
     octave = midi // 12 - 1
-    anglo = ROOT_NAMES[pc]
-    solfege = ROOT_SOLFEGE[anglo]
-    return f"{solfege} ({anglo}{octave})"
-
-
-def root_menu_label(root: str) -> str:
-    return f"{root}  —  {ROOT_SOLFEGE.get(root, root)}"
+    return f"{ROOT_NAMES[pc]}{octave}"
 
 
 @dataclass
@@ -80,12 +58,12 @@ class ScaleSettings:
 
     @property
     def c_midi(self) -> int:
-        """Concert C / Do for piano layout key Z (always fixed)."""
+        """Concert C for piano layout key Z (always fixed)."""
         return 12 + self.octave * 12
 
     @property
     def base_midi(self) -> int:
-        """Tonica at the chosen octave — Z in scale-rows layout."""
+        """Root at the chosen octave — Z in scale-rows layout."""
         return 12 + self.octave * 12 + ROOT_TO_SEMITONE[self.root]
 
     @property

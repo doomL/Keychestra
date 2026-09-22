@@ -23,7 +23,7 @@ You don’t open a DAW. You don’t grab a MIDI controller.
 You just keep typing — and **Keychestra** lets you *play on top of the music* at the same time.
 
 Emails still send. Code still compiles.  
-`Z` is still `z` for your editor — and Do for your solo.
+`Z` is still `z` for your editor — and C for your solo.
 
 > Low volume. Mute in one click when the standup starts.  
 > Scales that keep you in key when you’re improvising half-distracted.  
@@ -45,7 +45,7 @@ Emails still send. Code still compiles.
 | **Record notify** | Desktop notification when a session file is saved (and when recording starts). |
 | **Session record** | Tray → **Record session** captures *what you hear* (YouTube + Keychestra) into your XDG Music folder (`~/Musica/Keychestra` on Italian desktops). |
 | **Settings stick** | Everything you change in the tray is saved to `~/.config/keychestra/config.yaml` (survives quit & reboot). |
-| **Two layouts** | **Piano** (`Z`=Do fisso, snap to scale) or **Scale rows** (`Z`=tonica, one scale-octave per row). |
+| **Two layouts** | **Piano** (`Z`=C fixed, snap to scale) or **Scale rows** (`Z`=root, one scale-octave per row). |
 | **Snap-to-scale** | In piano mode, out-of-scale keys bend to the nearest in-key pitch. Perfect for vibing over a track. |
 | **Tray cockpit** | Instrument, layout, scale, root, octave, mute, volume — live. |
 | **Always on** | Foreground, daemon, or systemd user service. |
@@ -54,7 +54,7 @@ Emails still send. Code still compiles.
 
 ## Layouts
 
-### Piano — classic desk keyboard (Z = Do fisso)
+### Piano — classic desk keyboard (Z = C fixed)
 
 ```
    2 3   5 6 7   9 0
@@ -62,18 +62,18 @@ Emails still send. Code still compiles.
   A S D F G H J K L
    Z X C V B N M
    │
-   └── Z = Do (C) always · S = Do♯ · X = Re · …
+   └── Z = C always · S = C♯ · X = D · …
 ```
 
 Root/scale only control **snap-to-scale** (wrong keys bend into the key).  
-Want `Z` = tonica? Use **Scale rows**.
+Want `Z` = root? Use **Scale rows**.
 
-### Scale rows — Z = tonica
+### Scale rows — Z = root
 
 ```
- q w e r t y u     ← tonica +2 octaves
- a s d f g h j     ← tonica +1 octave
- z x c v b n m     ← tonica … 7th (e.g. Re minore → Z=Re)
+ q w e r t y u     ← root +2 octaves
+ a s d f g h j     ← root +1 octave
+ z x c v b n m     ← root … 7th (e.g. D minor → Z=D)
 ```
 
 One octave of the scale per row. Every key is safe.  

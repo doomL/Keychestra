@@ -165,9 +165,9 @@ class OrganDaemon:
             return
         z = z_note_label(self.layout, self.scale_settings)
         if self.layout == LAYOUT_SCALE_ROWS:
-            tip = f"Scale rows — Z = tonica → {z}"
+            tip = f"Scale rows — Z = root → {z}"
         else:
-            tip = f"Piano — Z = Do fisso (ora {z}); tonica solo per lo snap"
+            tip = f"Piano — Z = C fixed (now {z}); root only affects snap"
         notify("Keychestra", tip, urgency="low")
 
     def set_layout(self, layout: str) -> None:
