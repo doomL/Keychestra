@@ -40,12 +40,12 @@ Emails still send. Code still compiles.
 | **Non-blocking** | Listens passively. Never steals keys from the focused app. |
 | **Real timbres** | FluidSynth + FluidR3 GM — piano, organ, guitar, **drums**, strings, sax, choir, pads… |
 | **Jam window** | Tray → **Open jam window** and keep it focused — keys play music but don’t type into Slack/Chrome/your editor. |
-| **Panic** | Tray → **Panic** or `Ctrl+Shift+P` — kills stuck notes and vibrato. |
-| **Space = vibrato** | Hold **Space** while notes ring; intensity/attack adjustable from the tray. |
+| **Panic** | Tray → **Panic** or `Ctrl+Shift+P` — kills stuck notes and tremolo. |
+| **Space = tremolo** | Hold **Space** while notes ring; intensity/attack from the tray (volume only). |
 | **Record notify** | Desktop notification when a session file is saved (and when recording starts). |
 | **Session record** | Tray → **Record session** captures *what you hear* (YouTube + Keychestra) into your XDG Music folder (`~/Musica/Keychestra` on Italian desktops). |
 | **Settings stick** | Everything you change in the tray is saved to `~/.config/keychestra/config.yaml` (survives quit & reboot). |
-| **Two layouts** | **Piano** (`Z`=Do, `S`=Do♯…) or **Scale rows** (one scale-octave per row — can’t really hit a wrong note). |
+| **Two layouts** | **Piano** (`Z`=Do fisso, snap to scale) or **Scale rows** (`Z`=tonica, one scale-octave per row). |
 | **Snap-to-scale** | In piano mode, out-of-scale keys bend to the nearest in-key pitch. Perfect for vibing over a track. |
 | **Tray cockpit** | Instrument, layout, scale, root, octave, mute, volume — live. |
 | **Always on** | Foreground, daemon, or systemd user service. |
@@ -54,7 +54,7 @@ Emails still send. Code still compiles.
 
 ## Layouts
 
-### Piano — classic desk keyboard
+### Piano — classic desk keyboard (Z = Do fisso)
 
 ```
    2 3   5 6 7   9 0
@@ -62,18 +62,18 @@ Emails still send. Code still compiles.
   A S D F G H J K L
    Z X C V B N M
    │
-   └── Z = Do (C) · S = Do♯ · X = Re · …
+   └── Z = Do (C) always · S = Do♯ · X = Re · …
 ```
 
-Pick the scale of the track (or close enough).  
-Miss a “black key”? It snaps into the scale. Keep flowing.
+Root/scale only control **snap-to-scale** (wrong keys bend into the key).  
+Want `Z` = tonica? Use **Scale rows**.
 
-### Scale rows — pure jam mode
+### Scale rows — Z = tonica
 
 ```
- q w e r t y u     ← octave +2
- a s d f g h j     ← octave +1
- z x c v b n m     ← root octave
+ q w e r t y u     ← tonica +2 octaves
+ a s d f g h j     ← tonica +1 octave
+ z x c v b n m     ← tonica … 7th (e.g. Re minore → Z=Re)
 ```
 
 One octave of the scale per row. Every key is safe.  
@@ -90,7 +90,7 @@ Where the *characters* go depends on window focus:
 2. Click that window (keep it focused)
 3. Play — notes sound, Slack/Chrome/your IDE don’t receive the keys
 
-Hold **Space** while notes are ringing for vibrato.  
+Hold **Space** while notes are ringing for tremolo (volume pulse, not pitch).  
 (Space still inserts spaces if another app has focus — that’s why the jam window exists.)
 
 ---
@@ -132,13 +132,13 @@ systemctl --user enable --now keychestra.service
 Mute / Unmute
 ● Record session
 Open jam window
-Volume & vibrato…  ← real sliders (tray menus can’t host them)
+Volume & tremolo…  ← real sliders (tray menus can’t host them)
 ────────────
 Layout / Instrument / Scale / Root / Octave
 ────────────
 Quit
 
-**Hold Space** while notes are down → vibrato.
+**Hold Space** while notes are down → tremolo (volume).
 ```
 
 | Hotkey | Action |

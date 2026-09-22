@@ -19,9 +19,11 @@ from keychestra.keymap import (
     LAYOUT_LABELS,
     LAYOUT_ORDER,
     LAYOUT_PIANO,
+    LAYOUT_SCALE_ROWS,
     build_drum_keymap,
     build_keymap,
     resolve_midi,
+    z_note_label,
 )
 from keychestra.controls_window import ControlsWindow
 from keychestra.jam_window import JamWindow
@@ -150,6 +152,23 @@ class OrganDaemon:
             self.keymap = build_drum_keymap()
         else:
             self.keymap = build_keymap(layout=self.layout, settings=self.scale_settings)
+            z = z_note_label(self.layout, self.scale_settings)
+            log.info(
+                "keymap %s · %s · Z → %s",
+                LAYOUT_LABELS[self.layout],
+                self.scale_settings.label,
+                z,
+            )
+
+    def _announce_mapping(self) -> None:
+        if is_drums(self.synth_cfg.instrument):
+            return
+        z = z_note_label(self.layout, self.scale_settings)
+        if self.layout == LAYOUT_SCALE_ROWS:
+            tip = f"Scale rows — Z = tonica → {z}"
+        else:
+            tip = f"Piano — Z = Do fisso (ora {z}); tonica solo per lo snap"
+        notify("Keychestra", tip, urgency="low")
 
     def set_layout(self, layout: str) -> None:
         if layout not in LAYOUT_ORDER:
@@ -158,6 +177,7 @@ class OrganDaemon:
         self._rebuild_keymap()
         self.engine.all_notes_off()
         log.info("layout → %s", LAYOUT_LABELS[layout])
+        self._announce_mapping()
         self._persist()
         if self._tray is not None:
             self._tray._refresh()
@@ -180,6 +200,7 @@ class OrganDaemon:
         self._rebuild_keymap()
         self.engine.all_notes_off()
         log.info("scale → %s", self.scale_settings.label)
+        self._announce_mapping()
         self._persist()
         if self._tray is not None:
             self._tray._refresh()
@@ -191,6 +212,7 @@ class OrganDaemon:
         self._rebuild_keymap()
         self.engine.all_notes_off()
         log.info("root → %s", self.scale_settings.label)
+        self._announce_mapping()
         self._persist()
         if self._tray is not None:
             self._tray._refresh()

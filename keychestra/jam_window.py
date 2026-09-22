@@ -65,7 +65,9 @@ class JamWindow:
             label=(
                 "Keep this window focused to jam without typing\n"
                 "into Slack, the browser, or your editor.\n\n"
-                "Hold Space = vibrato.\n"
+                "Piano: Z = Do (C) always.\n"
+                "Scale rows: Z = tonica (Do if root is C).\n\n"
+                "Hold Space = tremolo (volume).\n"
                 "Ctrl+Shift+P = panic (all notes off).\n\n"
                 "Keys still make sound either way — focus only\n"
                 "controls where the characters go."

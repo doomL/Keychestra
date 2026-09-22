@@ -1,8 +1,8 @@
 """
 Keyboard layouts:
 
-- piano: classic virtual piano — Z=Do(C), S=Do♯, X=Re, … ; out-of-scale → snap
-- scale_rows: each letter row is one octave of the chosen scale (Z row, A row, Q row)
+- piano: classic virtual piano — Z=Do(C) fisso, S=Do♯, X=Re, … ; out-of-scale → snap
+- scale_rows: each letter row is one octave of the chosen scale; Z = tonica
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ LAYOUT_PIANO = "piano"
 LAYOUT_SCALE_ROWS = "scale_rows"
 
 LAYOUT_LABELS = {
-    LAYOUT_PIANO: "Piano (Z=Do, S=Do♯…)",
-    LAYOUT_SCALE_ROWS: "Scale rows (1 octave per row)",
+    LAYOUT_PIANO: "Piano (Z=Do fisso)",
+    LAYOUT_SCALE_ROWS: "Scale rows (Z=tonica)",
 }
 
 LAYOUT_ORDER = (LAYOUT_PIANO, LAYOUT_SCALE_ROWS)
 
-# Classic virtual-piano semitone offsets from Z (= C / Do)
+# Classic virtual-piano semitone offsets from Z (= concert C / Do)
 PIANO_OFFSETS: dict[str, int] = {
     "z": 0, "s": 1, "x": 2, "d": 3, "c": 4, "v": 5,
     "g": 6, "b": 7, "h": 8, "n": 9, "j": 10, "m": 11,
@@ -104,16 +104,16 @@ def build_piano_keymap(c_midi: int = 48) -> dict[str, int]:
 
 
 def build_scale_rows_keymap(settings: ScaleSettings) -> dict[str, int]:
-    """Each row plays successive scale degrees within one octave, then +1 octave."""
+    """Each row = successive scale degrees; Z / A / Q are always the tonica."""
     mapping: dict[str, int] = {}
     intervals = settings.intervals
     n_degrees = max(1, len(intervals))
-    base = settings.base_midi  # root at chosen octave
+    base = settings.base_midi  # tonica at chosen octave
 
     for row_i, row in enumerate(SCALE_ROWS):
         for key_i, ch in enumerate(row):
-            degree = key_i % n_degrees
-            absolute_degree = degree + row_i * n_degrees
+            # Walk the scale; each new row continues +1 octave of degrees
+            absolute_degree = key_i + row_i * n_degrees
             midi = degree_to_midi(base, intervals, absolute_degree)
             if 0 <= midi <= 127:
                 mapping[ch] = midi
@@ -134,7 +134,19 @@ def build_keymap(
     settings = settings or ScaleSettings()
     if layout == LAYOUT_SCALE_ROWS:
         return build_scale_rows_keymap(settings)
+    # Piano: Z is always concert Do (C); root only affects snap-to-scale
     return build_piano_keymap(settings.c_midi)
+
+
+def z_note_label(layout: str, settings: ScaleSettings) -> str:
+    """Human label for what Z plays in the current layout."""
+    from keychestra.scales import midi_to_name
+
+    km = build_keymap(layout=layout, settings=settings)
+    midi = km.get("z")
+    if midi is None:
+        return "?"
+    return midi_to_name(midi)
 
 
 def resolve_midi(

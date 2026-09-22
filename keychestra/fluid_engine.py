@@ -14,7 +14,10 @@ log = logging.getLogger("keychestra")
 
 MELODY_CH = 0
 DRUM_CH = 9
-PITCH_CENTER = 8192
+
+# pyFluidsynth pitch_bend() takes a *signed* offset: 0 = center.
+# Never pass absolute MIDI 0…16383 values (that detunes by ~4 semitones).
+PITCH_BEND_CENTER = 0
 
 SOUND_FONT_CANDIDATES = (
     Path("/usr/share/sounds/sf2/FluidR3_GM.sf2"),
@@ -48,9 +51,8 @@ class FluidEngine:
         self._tremolo = False
         self._tremolo_stop = threading.Event()
         self._tremolo_thread: threading.Thread | None = None
-        # User-facing 0…1 → vibrato depth (Space). Config keys keep tremolo_* name.
+        # 0…1 → amplitude tremolo depth (Space). No pitch bend.
         self.tremolo_intensity = 0.45
-        # Seconds to reach full vibrato depth while holding Space (0 = instant)
         self.tremolo_ramp_s = 1.0
 
         self.fs = fluidsynth.Synth(samplerate=float(cfg.sample_rate))
@@ -72,6 +74,7 @@ class FluidEngine:
         self.fs.setting("synth.gain", float(gain))
         self._apply_program()
         self._set_gain_from_volume()
+        self._reset_pitch_bend()
         log.info("SoundFont loaded: %s", soundfont)
 
     def _channel(self) -> int:
@@ -89,8 +92,11 @@ class FluidEngine:
                 self.fs.program_select(DRUM_CH, self._sfid, 0, 0)
         else:
             self.fs.program_select(MELODY_CH, self._sfid, 0, int(inst.gm_program))
+        self._reset_pitch_bend()
 
     def _set_gain_from_volume(self) -> None:
+        if self._tremolo:
+            return
         try:
             self.fs.setting("synth.gain", float(self._base_gain()))
         except Exception:
@@ -99,7 +105,14 @@ class FluidEngine:
     def _reset_pitch_bend(self) -> None:
         for ch in (MELODY_CH, DRUM_CH):
             try:
-                self.fs.pitch_bend(ch, PITCH_CENTER)
+                self.fs.pitch_bend(ch, PITCH_BEND_CENTER)
+            except Exception:
+                pass
+
+    def _reset_expression(self) -> None:
+        for ch in (MELODY_CH, DRUM_CH):
+            try:
+                self.fs.cc(ch, 11, 127)
             except Exception:
                 pass
 
@@ -122,15 +135,13 @@ class FluidEngine:
         return self.muted
 
     def set_tremolo_intensity(self, intensity: float) -> None:
-        """0…1 user control; maps to vibrato pitch depth."""
         self.tremolo_intensity = float(max(0.0, min(1.0, intensity)))
 
     def set_tremolo_ramp(self, seconds: float) -> None:
-        """How long Space must be held to reach full intensity (0 = immediate)."""
         self.tremolo_ramp_s = float(max(0.0, min(4.0, seconds)))
 
     def set_tremolo(self, enabled: bool) -> None:
-        """Hold Space → pitch vibrato on the active channel."""
+        """Hold Space → amplitude tremolo (volume only — never touches pitch)."""
         enabled = bool(enabled)
         if enabled == self._tremolo:
             return
@@ -138,7 +149,7 @@ class FluidEngine:
         if enabled:
             self._tremolo_stop.clear()
             self._tremolo_thread = threading.Thread(
-                target=self._tremolo_loop, name="keychestra-vibrato", daemon=True
+                target=self._tremolo_loop, name="keychestra-tremolo", daemon=True
             )
             self._tremolo_thread.start()
         else:
@@ -146,31 +157,33 @@ class FluidEngine:
             if self._tremolo_thread is not None:
                 self._tremolo_thread.join(timeout=0.5)
                 self._tremolo_thread = None
+            self._reset_expression()
+            self._set_gain_from_volume()
             self._reset_pitch_bend()
 
     def _tremolo_loop(self) -> None:
-        """Pitch vibrato via MIDI pitch bend (resets to center when Space is released)."""
-        rate_hz = 5.5
-        # ±bend units at intensity 1.0. With ±2 semitone bend range,
-        # ~1800 ≈ ±44 cents — obvious without wrecking the note.
-        absolute_max_bend = 1800
+        rate_hz = 4.5
+        # Intensity 1.0 ≈ clear pulse without vanishing the note
+        absolute_max_depth = 0.55
         ramp_s = max(0.0, self.tremolo_ramp_s)
         t0 = time.monotonic()
-        ch = self._channel()
         while not self._tremolo_stop.is_set():
             elapsed = time.monotonic() - t0
             if ramp_s <= 0.001:
                 ramp = 1.0
             else:
                 ramp = 1.0 - math.exp(-elapsed / (ramp_s * 0.55))
-            depth = absolute_max_bend * self.tremolo_intensity * min(1.0, ramp)
+            depth = absolute_max_depth * self.tremolo_intensity * min(1.0, ramp)
             phase = 2.0 * math.pi * rate_hz * elapsed
-            bend = int(round(PITCH_CENTER + depth * math.sin(phase)))
+            mod = 0.5 * (1.0 + math.sin(phase))
+            factor = 1.0 - depth + depth * mod
             try:
-                self.fs.pitch_bend(ch, max(0, min(16383, bend)))
+                self.fs.setting("synth.gain", float(self._base_gain() * factor))
+                expr = int(round(127 * (0.30 + 0.70 * factor)))
+                self.fs.cc(self._channel(), 11, max(1, min(127, expr)))
             except Exception:
                 pass
-            time.sleep(0.010)
+            time.sleep(0.012)
 
     def note_on(self, key_id: object, midi: int) -> None:
         if self.muted:
@@ -178,6 +191,8 @@ class FluidEngine:
         midi = int(max(0, min(127, midi)))
         vel = int(max(40, min(110, 45 + self.cfg.volume * 130)))
         ch = self._channel()
+        if not self._tremolo:
+            self._reset_pitch_bend()
         with self._lock:
             old = self._active.pop(key_id, None)
             if old is not None:
@@ -192,7 +207,7 @@ class FluidEngine:
             self.fs.noteoff(pair[0], pair[1])
 
     def panic(self) -> None:
-        """Silence everything — stuck notes and vibrato."""
+        """Silence everything — stuck notes and tremolo."""
         self.set_tremolo(False)
         self.all_notes_off()
         log.info("panic — all notes off")
@@ -206,9 +221,10 @@ class FluidEngine:
         for ch in (MELODY_CH, DRUM_CH):
             try:
                 self.fs.cc(ch, 123, 0)
-                self.fs.cc(ch, 120, 0)  # all sound off
+                self.fs.cc(ch, 120, 0)
             except Exception:
                 pass
+        self._reset_expression()
         self._reset_pitch_bend()
 
     def shutdown(self) -> None:

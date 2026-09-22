@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from keychestra.instruments import INSTRUMENT_ORDER, INSTRUMENTS
 from keychestra.keymap import LAYOUT_LABELS, LAYOUT_ORDER
-from keychestra.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER
+from keychestra.scales import ROOT_NAMES, SCALE_LABELS, SCALE_ORDER, root_menu_label
 
 log = logging.getLogger("keychestra")
 
@@ -267,7 +267,7 @@ class TrayController:
         root_menu = Menu(
             *[
                 MenuItem(
-                    name,
+                    root_menu_label(name),
                     self._set_root(name),
                     checked=self._root_checked(name),
                     radio=True,
@@ -330,8 +330,8 @@ class TrayController:
             MenuItem("Open jam window", self._open_jam),
             Menu.SEPARATOR,
             MenuItem("Volume", volume_menu),
-            MenuItem("Vibrato intensity", tremolo_menu),
-            MenuItem("Vibrato attack", ramp_menu),
+            MenuItem("Tremolo intensity", tremolo_menu),
+            MenuItem("Tremolo attack", ramp_menu),
             MenuItem("All sliders…", self._open_controls),
             Menu.SEPARATOR,
             MenuItem("Layout", layout_menu),

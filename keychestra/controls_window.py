@@ -1,4 +1,4 @@
-"""GTK panel with real sliders for volume, vibrato intensity, and attack."""
+"""GTK panel with real sliders for volume, tremolo intensity, and attack."""
 
 from __future__ import annotations
 
@@ -118,12 +118,12 @@ class ControlsWindow:
         ramp.connect("value-changed", on_ramp)
 
         row(0, "Volume", vol, vol_value)
-        row(1, "Vibrato max", trem, trem_value)
-        row(2, "Vibrato attack", ramp, ramp_value)
+        row(1, "Tremolo max", trem, trem_value)
+        row(2, "Tremolo attack", ramp, ramp_value)
 
         hint = Gtk.Label(
-            label="Attack 0 = full vibrato as soon as you hold Space.\n"
-            "Higher = fades in the longer you hold."
+            label="Attack 0 = full tremolo as soon as you hold Space.\n"
+            "Higher = fades in the longer you hold. (Volume only — no pitch.)"
         )
         hint.set_xalign(0)
         hint.set_opacity(0.75)
