@@ -39,7 +39,11 @@ Emails still send. Code still compiles.
 |---|---|
 | **Non-blocking** | Listens passively. Never steals keys from the focused app. |
 | **Real timbres** | FluidSynth + FluidR3 GM — piano, organ, guitar, **drums**, strings, sax, choir, pads… |
-| **Session record** | Tray → **Record session** captures *what you hear* (YouTube + Keychestra) into `~/Musica/Keychestra/` (or your XDG Music folder). |
+| **Jam window** | Tray → **Open jam window** and keep it focused — keys play music but don’t type into Slack/Chrome/your editor. |
+| **Panic** | Tray → **Panic** or `Ctrl+Shift+P` — kills stuck notes and vibrato. |
+| **Space = vibrato** | Hold **Space** while notes ring; intensity/attack adjustable from the tray. |
+| **Record notify** | Desktop notification when a session file is saved (and when recording starts). |
+| **Session record** | Tray → **Record session** captures *what you hear* (YouTube + Keychestra) into your XDG Music folder (`~/Musica/Keychestra` on Italian desktops). |
 | **Settings stick** | Everything you change in the tray is saved to `~/.config/keychestra/config.yaml` (survives quit & reboot). |
 | **Two layouts** | **Piano** (`Z`=Do, `S`=Do♯…) or **Scale rows** (one scale-octave per row — can’t really hit a wrong note). |
 | **Snap-to-scale** | In piano mode, out-of-scale keys bend to the nearest in-key pitch. Perfect for vibing over a track. |
@@ -74,6 +78,20 @@ Miss a “black key”? It snaps into the scale. Keep flowing.
 
 One octave of the scale per row. Every key is safe.  
 Ideal when the YouTube tab is carrying the harmony and you’re just adding color.
+
+---
+
+## Playing without typing into other apps
+
+Keychestra listens **globally**, so sound always works.  
+Where the *characters* go depends on window focus:
+
+1. Tray → **Open jam window**
+2. Click that window (keep it focused)
+3. Play — notes sound, Slack/Chrome/your IDE don’t receive the keys
+
+Hold **Space** while notes are ringing for vibrato.  
+(Space still inserts spaces if another app has focus — that’s why the jam window exists.)
 
 ---
 
@@ -112,16 +130,15 @@ systemctl --user enable --now keychestra.service
 
 ```
 Mute / Unmute
-● Record session   ← what you hear (track + your playing)
-Volume ±
+● Record session
+Open jam window
+Volume & vibrato…  ← real sliders (tray menus can’t host them)
 ────────────
-Layout          →  Piano  |  Scale rows
-Instrument      →  Piano, Organ, Guitar, Drums, Strings, Sax, Pad…
-Scale           →  Major, Minor, Modes, Blues, Pentatonic…
-Root note       →  C … B
-Octave ±
+Layout / Instrument / Scale / Root / Octave
 ────────────
 Quit
+
+**Hold Space** while notes are down → vibrato.
 ```
 
 | Hotkey | Action |

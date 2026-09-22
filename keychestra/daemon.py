@@ -23,7 +23,10 @@ from keychestra.keymap import (
     build_keymap,
     resolve_midi,
 )
+from keychestra.controls_window import ControlsWindow
+from keychestra.jam_window import JamWindow
 from keychestra.listener import KeyboardOrganListener
+from keychestra.notify import notify, notify_recording_saved
 from keychestra.recorder import SessionRecorder
 from keychestra.scales import ROOT_NAMES, SCALE_INTERVALS, ScaleSettings
 
@@ -84,15 +87,20 @@ class OrganDaemon:
         self.ignore_repeat = bool(raw.get("ignore_repeat", True))
         self.mute_hotkey = str(raw.get("mute_hotkey", "<ctrl>+<shift>+o"))
         self.quit_hotkey = str(raw.get("quit_hotkey", "<ctrl>+<shift>+q"))
+        self.panic_hotkey = str(raw.get("panic_hotkey", "<ctrl>+<shift>+p"))
         self.tray_enabled = bool(raw.get("tray", True))
 
         self._rebuild_keymap()
         self.engine = create_engine(self.synth_cfg, soundfont_path=raw.get("soundfont"))
+        self.engine.set_tremolo_intensity(float(raw.get("tremolo_intensity", 0.45)))
+        self.engine.set_tremolo_ramp(float(raw.get("tremolo_ramp_s", 1.0)))
         self.recorder = SessionRecorder(
             output_dir=Path(raw["record_dir"]).expanduser()
             if raw.get("record_dir")
             else None
         )
+        self.jam_window = JamWindow(self)
+        self.controls_window = ControlsWindow(self)
         self.listener: KeyboardOrganListener | None = None
         self._hotkeys: keyboard.GlobalHotKeys | None = None
         self._tray = None
@@ -113,9 +121,12 @@ class OrganDaemon:
             "root": self.scale_settings.root,
             "octave": self.scale_settings.octave,
             "volume": round(float(self.synth_cfg.volume), 3),
+            "tremolo_intensity": round(float(self.engine.tremolo_intensity), 3),
+            "tremolo_ramp_s": round(float(self.engine.tremolo_ramp_s), 3),
             "sample_rate": int(self.synth_cfg.sample_rate),
             "mute_hotkey": self.mute_hotkey,
             "quit_hotkey": self.quit_hotkey,
+            "panic_hotkey": self.panic_hotkey,
             "ignore_repeat": self.ignore_repeat,
         }
         if self.raw.get("soundfont"):
@@ -198,9 +209,24 @@ class OrganDaemon:
         self.synth_cfg = self.engine.cfg
         self._persist()
 
+    def set_tremolo_intensity(self, intensity: float) -> None:
+        self.engine.set_tremolo_intensity(intensity)
+        self._persist()
+
+    def set_tremolo_ramp(self, seconds: float) -> None:
+        self.engine.set_tremolo_ramp(seconds)
+        self._persist()
+
+    def open_controls_window(self) -> None:
+        self.controls_window.show()
+        if self._tray is not None:
+            self._tray._refresh()
+
     def _on_press(self, key: Key | KeyCode) -> None:
+        if key == Key.space:
+            self.engine.set_tremolo(True)
+            return
         if is_drums(self.synth_cfg.instrument):
-            # Drums: fixed kit map, no scale snap
             midi = resolve_midi(self.keymap, key, settings=None, layout=LAYOUT_PIANO)
         else:
             midi = resolve_midi(
@@ -212,8 +238,22 @@ class OrganDaemon:
         self.engine.note_on(kid, midi)
 
     def _on_release(self, key: Key | KeyCode) -> None:
+        if key == Key.space:
+            self.engine.set_tremolo(False)
+            return
         kid = KeyboardOrganListener._key_id(key)
         self.engine.note_off(kid)
+
+    def panic(self) -> None:
+        self.engine.panic()
+        notify("Keychestra", "Panic — all notes off", urgency="low")
+        if self._tray is not None:
+            self._tray._refresh()
+
+    def open_jam_window(self) -> None:
+        self.jam_window.show()
+        if self._tray is not None:
+            self._tray._refresh()
 
     def _toggle_mute(self) -> None:
         muted = self.engine.toggle_mute()
@@ -226,14 +266,17 @@ class OrganDaemon:
         if self.recorder.recording:
             path = self.recorder.stop()
             log.info("session saved: %s", path)
+            notify_recording_saved(path)
             if self._tray is not None:
                 self._tray._refresh()
             return False
         try:
             path = self.recorder.start()
             log.info("session recording: %s", path)
-        except Exception:
+            notify("Recording…", f"Capturing system audio\n→ {path.parent}", urgency="low")
+        except Exception as exc:
             log.exception("could not start session recording")
+            notify("Recording failed", str(exc), urgency="critical")
             if self._tray is not None:
                 self._tray._refresh()
             return False
@@ -244,7 +287,11 @@ class OrganDaemon:
     def request_stop(self) -> None:
         log.info("stopping…")
         if self.recorder.recording:
-            self.recorder.stop()
+            path = self.recorder.stop()
+            notify_recording_saved(path)
+        self.engine.panic()
+        self.jam_window.close()
+        self.controls_window.close()
         self._persist()
         self._stop.set()
 
@@ -268,6 +315,7 @@ class OrganDaemon:
             {
                 self.mute_hotkey: self._toggle_mute,
                 self.quit_hotkey: self.request_stop,
+                self.panic_hotkey: self.panic,
             }
         )
         self._hotkeys.start()

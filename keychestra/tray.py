@@ -99,15 +99,6 @@ class TrayController:
         if self._icon is not None:
             self._icon.stop()
 
-    def _volume_delta(self, delta: float) -> Callable:
-        def _cb(_icon=None, _item=None) -> None:
-            vol = max(0.0, min(1.0, self.daemon.engine.cfg.volume + delta))
-            self.daemon.set_volume(vol)
-            log.info("volume %.2f", vol)
-            self._refresh()
-
-        return _cb
-
     def _mute_label(self, _item=None) -> str:
         return "Unmute" if self.daemon.engine.muted else "Mute"
 
@@ -119,6 +110,61 @@ class TrayController:
     def _toggle_record(self, _icon=None, _item=None) -> None:
         self.daemon.toggle_recording()
         self._refresh()
+
+    def _open_jam(self, _icon=None, _item=None) -> None:
+        self.daemon.open_jam_window()
+        self._refresh()
+
+    def _open_controls(self, _icon=None, _item=None) -> None:
+        self.daemon.open_controls_window()
+        self._refresh()
+
+    def _panic(self, _icon=None, _item=None) -> None:
+        self.daemon.panic()
+        self._refresh()
+
+    @staticmethod
+    def _near(a: float, b: float, eps: float = 0.03) -> bool:
+        return abs(a - b) <= eps
+
+    def _set_volume(self, value: float) -> Callable:
+        def _cb(_icon=None, _item=None) -> None:
+            self.daemon.set_volume(value)
+            self._refresh()
+
+        return _cb
+
+    def _volume_checked(self, value: float) -> Callable:
+        def _checked(_item=None) -> bool:
+            return self._near(self.daemon.engine.cfg.volume, value)
+
+        return _checked
+
+    def _set_tremolo_intensity(self, value: float) -> Callable:
+        def _cb(_icon=None, _item=None) -> None:
+            self.daemon.set_tremolo_intensity(value)
+            self._refresh()
+
+        return _cb
+
+    def _tremolo_intensity_checked(self, value: float) -> Callable:
+        def _checked(_item=None) -> bool:
+            return self._near(self.daemon.engine.tremolo_intensity, value)
+
+        return _checked
+
+    def _set_tremolo_ramp(self, seconds: float) -> Callable:
+        def _cb(_icon=None, _item=None) -> None:
+            self.daemon.set_tremolo_ramp(seconds)
+            self._refresh()
+
+        return _cb
+
+    def _tremolo_ramp_checked(self, seconds: float) -> Callable:
+        def _checked(_item=None) -> bool:
+            return self._near(self.daemon.engine.tremolo_ramp_s, seconds, eps=0.08)
+
+        return _checked
 
     def _set_instrument(self, instrument_id: str) -> Callable:
         def _cb(_icon=None, _item=None) -> None:
@@ -230,11 +276,63 @@ class TrayController:
             ]
         )
 
+        volume_steps = (0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.65, 0.80, 1.00)
+        tremolo_steps = (0.0, 0.15, 0.30, 0.45, 0.60, 0.75, 1.00)
+        ramp_presets = (
+            (0.0, "Instant (full now)"),
+            (0.35, "Fast"),
+            (1.0, "Medium"),
+            (2.0, "Slow"),
+        )
+
+        volume_menu = Menu(
+            *[
+                MenuItem(
+                    f"{int(v * 100)}%",
+                    self._set_volume(v),
+                    checked=self._volume_checked(v),
+                    radio=True,
+                )
+                for v in volume_steps
+            ],
+            Menu.SEPARATOR,
+            MenuItem("Fine slider…", self._open_controls),
+        )
+        tremolo_menu = Menu(
+            *[
+                MenuItem(
+                    f"{int(v * 100)}%",
+                    self._set_tremolo_intensity(v),
+                    checked=self._tremolo_intensity_checked(v),
+                    radio=True,
+                )
+                for v in tremolo_steps
+            ],
+            Menu.SEPARATOR,
+            MenuItem("Fine slider…", self._open_controls),
+        )
+        ramp_menu = Menu(
+            *[
+                MenuItem(
+                    label,
+                    self._set_tremolo_ramp(secs),
+                    checked=self._tremolo_ramp_checked(secs),
+                    radio=True,
+                )
+                for secs, label in ramp_presets
+            ]
+        )
+
         return Menu(
             MenuItem(self._mute_label, self._toggle_mute, default=True),
+            MenuItem("Panic (all notes off)", self._panic),
             MenuItem(self._record_label, self._toggle_record),
-            MenuItem("Volume +", self._volume_delta(0.05)),
-            MenuItem("Volume −", self._volume_delta(-0.05)),
+            MenuItem("Open jam window", self._open_jam),
+            Menu.SEPARATOR,
+            MenuItem("Volume", volume_menu),
+            MenuItem("Vibrato intensity", tremolo_menu),
+            MenuItem("Vibrato attack", ramp_menu),
+            MenuItem("All sliders…", self._open_controls),
             Menu.SEPARATOR,
             MenuItem("Layout", layout_menu),
             MenuItem("Instrument", instrument_menu),
