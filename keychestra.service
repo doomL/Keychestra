@@ -1,6 +1,6 @@
 [Unit]
 Description=Keychestra — keyboard SoundFont jam overlay (non-blocking)
-After=default.target sound.target
+After=default.target
 
 [Service]
 Type=simple
@@ -10,8 +10,6 @@ Restart=on-failure
 RestartSec=2
 Environment=DISPLAY=:1
 Environment=XAUTHORITY=%h/.Xauthority
-
-# Needed so pynput can talk to the X session when started from systemd
 Environment=XDG_RUNTIME_DIR=/run/user/%U
 
 [Install]
